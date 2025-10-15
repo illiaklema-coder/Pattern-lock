@@ -46,7 +46,7 @@
     }
     input[type=color] {
       width: 90px;
-      height: 40px; /* увеличенный размер поля выбора цвета */
+      height: 40px;
       padding: 0;
     }
   </style>
@@ -55,7 +55,8 @@
   <h2>Pattern Lock</h2>
   <canvas id="pattern" width="600" height="600"></canvas>
   <div class="controls">
-    <label>Grid size: <input type="number" id="gridSize" min="2" max="30" value="3"></label>
+    <label>X points: <input type="number" id="gridX" min="2" max="100" value="3"></label>
+    <label>Y points: <input type="number" id="gridY" min="2" max="100" value="3"></label>
     <div class="color-controls">
       <label>Line color: <input type="color" id="lineColor" value="#00ff00"></label>
       <label>Active point color: <input type="color" id="activePointColor" value="#0f0"></label>
@@ -65,12 +66,14 @@
   <script>
     const canvas = document.getElementById('pattern');
     const ctx = canvas.getContext('2d');
-    const gridInput = document.getElementById('gridSize');
+    const gridXInput = document.getElementById('gridX');
+    const gridYInput = document.getElementById('gridY');
     const resetBtn = document.getElementById('reset');
     const lineColorInput = document.getElementById('lineColor');
     const activePointColorInput = document.getElementById('activePointColor');
 
-    let gridSize = parseInt(gridInput.value);
+    let gridX = parseInt(gridXInput.value);
+    let gridY = parseInt(gridYInput.value);
     let lineColor = lineColorInput.value;
     let activePointColor = activePointColorInput.value;
 
@@ -80,11 +83,9 @@
     let lastPos = null;
 
     function resizeCanvas() {
-      const minSize = window.innerWidth < 600 ? 150 : 400;
-      const maxSize = window.innerWidth < 600 ? 200 : 700;
-      const newSize = Math.min(maxSize, minSize + gridSize * (window.innerWidth < 600 ? 4 : 12));
-      canvas.width = newSize;
-      canvas.height = newSize;
+      const maxSize = Math.min(700, Math.min(window.innerWidth, window.innerHeight) * 0.8);
+      canvas.width = maxSize;
+      canvas.height = maxSize;
       pattern = [];
       resizeGrid();
     }
@@ -93,13 +94,17 @@
       points = [];
       const w = canvas.width;
       const h = canvas.height;
-      const stepX = w / (gridSize + 1);
-      const stepY = h / (gridSize + 1);
-      const radius = Math.max(3, Math.min(25, (window.innerWidth < 600 ? 10 : 18) - gridSize / 2));
 
-      for (let i = 1; i <= gridSize; i++) {
-        for (let j = 1; j <= gridSize; j++) {
-          points.push({ x: stepX * j, y: stepY * i, id: (i - 1) * gridSize + j, r: radius });
+      // Пропорциональное распределение точек без лишних пробелов
+      const step = Math.min(w / (gridX + 1), h / (gridY + 1));
+      const offsetX = (w - step * (gridX - 1)) / 2;
+      const offsetY = (h - step * (gridY - 1)) / 2;
+
+      const radius = Math.max(3, Math.min(25, step / 4));
+
+      for (let i = 0; i < gridY; i++) {
+        for (let j = 0; j < gridX; j++) {
+          points.push({ x: offsetX + j * step, y: offsetY + i * step, id: i * gridX + j + 1, r: radius });
         }
       }
       draw();
@@ -184,8 +189,13 @@
 
     canvas.addEventListener('pointerdown', start);
 
-    gridInput.addEventListener('change', () => {
-      gridSize = parseInt(gridInput.value);
+    gridXInput.addEventListener('change', () => {
+      gridX = parseInt(gridXInput.value);
+      resizeCanvas();
+    });
+
+    gridYInput.addEventListener('change', () => {
+      gridY = parseInt(gridYInput.value);
       resizeCanvas();
     });
 
